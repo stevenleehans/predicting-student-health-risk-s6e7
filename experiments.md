@@ -788,3 +788,88 @@ Test missing-pattern specialist routing using already identified hard subsets, b
 - `experiment_005_artifacts/crossfit_predictions.npz` — cross-fitted predictions and deployment multipliers.
 - `experiment_005_artifacts/summary.json` — local metrics, test changes, Kaggle score, and decision.
 - `experiment_004_artifacts/test_probabilities.npz` — reusable fold-bagged test probabilities for all component models and the accepted blend.
+
+---
+
+## Experiment 006 — Both-stress-and-sleep-missing specialist router
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed and rejected. Not submitted to Kaggle because cross-fitted OOF performance decreased.
+
+### Question
+
+Can specialist models improve the hard subset where both `stress_level` and `sleep_duration` are missing, while leaving every other row on the accepted Experiment 004 ensemble?
+
+### Motivation
+
+Experiment 002 showed a +0.00823 balanced-accuracy improvement on this subset in one 80/20 holdout using a global two-stage model. Experiment 006 tested whether a targeted version of that signal survives the trusted five-fold framework.
+
+### Method
+
+- Route: `stress_level is NaN AND sleep_duration is NaN`.
+- Routed training rows: 9,013.
+- Routed test rows: 3,888.
+- Reused Experiment 003 fold assignments and Experiment 004 base probabilities.
+- Trained CatBoost, XGBoost, and LightGBM specialists only on matching routed rows from the fitting folds.
+- Removed stress and sleep themselves from the specialist feature set because both are constant-missing inside the route.
+- Preserved all other missing values natively.
+- Each held-out fold's specialist weights and routing alpha were learned using routed rows from the other four folds.
+- The search was allowed to choose alpha 0, which means retaining the base ensemble.
+
+### Standalone specialist results
+
+| Fold | Base ensemble | Specialist CatBoost | Specialist XGBoost | Specialist LightGBM |
+|---:|---:|---:|---:|---:|
+| 0 | 0.659442 | 0.642460 | 0.487194 | 0.457840 |
+| 1 | 0.671178 | 0.640584 | 0.495767 | 0.479638 |
+| 2 | 0.644670 | **0.653306** | 0.471824 | 0.448342 |
+| 3 | 0.617510 | **0.619635** | 0.466183 | 0.452297 |
+| 4 | 0.664190 | **0.664283** | 0.499033 | 0.472719 |
+
+CatBoost was the only viable specialist, but it was unstable: it improved three folds slightly and damaged folds 0–1, especially fold 1. XGBoost and LightGBM strongly overfit the small specialist population.
+
+### Cross-fitted router results
+
+| Fold | Route rows | Alpha | Base route BA | Routed route BA | Route delta | Global delta |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 1,867 | 0.1 | 0.659442 | 0.657319 | -0.002123 | -0.000029 |
+| 1 | 1,791 | 0.8 | 0.671178 | 0.638070 | -0.033108 | -0.000451 |
+| 2 | 1,751 | 0.1 | 0.644670 | 0.647223 | +0.002553 | +0.000032 |
+| 3 | 1,823 | 0.1 | 0.617510 | 0.621371 | +0.003860 | +0.000049 |
+| 4 | 1,781 | 0.1 | 0.664190 | 0.664400 | +0.000210 | +0.000002 |
+
+Aggregate results:
+
+- Base global OOF balanced accuracy: **0.949439**.
+- Cross-fitted routed global OOF: **0.949360**.
+- Global difference: **-0.000079**.
+- Base routed-subset balanced accuracy: **0.650675**.
+- Cross-fitted routed-subset balanced accuracy: **0.644657**.
+- Routed-subset difference: **-0.006018**.
+- Global folds improved: 3 of 5.
+- Global fold-delta standard deviation: 0.000210.
+
+### Decision
+
+**Reject the specialist router and do not submit it. Experiment 004 remains best.**
+
+The apparent subset improvement from Experiment 002 was a single-holdout result that did not generalize across the fixed folds. In addition, Experiment 002's model was a global two-stage model rather than a specialist trained only on 9,013 routed rows, so the experiments are not identical. Experiment 006 is the stronger decision basis because its routing parameters were cross-fitted and its failure is visible across multiple folds.
+
+The deployment search would have used only 10% specialist CatBoost and changed 38 test labels, but cross-fitted evidence is negative. No Kaggle submission was spent on it.
+
+### Implication for the 0.951 target
+
+Neither global probability correction nor narrow both-missing routing supplies enough stable signal. The project needs a larger modeling or data lever. The next experiment should test source/original dataset augmentation or a materially different target-generation model, not another tiny boundary adjustment.
+
+### Artifacts
+
+- `experiment_006_missing_pattern_specialist.py` — native specialist training, cross-fitted routing, and optional submission build.
+- `experiment_006_artifacts/specialist_fold_scores.csv` — standalone specialist fold scores.
+- `experiment_006_artifacts/crossfit_router_results.csv` — fold-specific routing parameters and effects.
+- `experiment_006_artifacts/specialist_predictions.npz` — specialist OOF/test probabilities and cross-fitted routed predictions.
+- `experiment_006_artifacts/summary.json` — aggregate results and rejection decision.

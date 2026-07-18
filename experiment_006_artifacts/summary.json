@@ -1,0 +1,30 @@
+{
+  "route": "stress_level is NaN AND sleep_duration is NaN",
+  "train_route_rows": 9013,
+  "test_route_rows": 3888,
+  "base_global_oof_balanced_accuracy": 0.9494387728642187,
+  "crossfit_routed_global_oof_balanced_accuracy": 0.9493595316378954,
+  "crossfit_global_delta": -7.92412263233011e-05,
+  "base_route_oof_balanced_accuracy": 0.6506750969792922,
+  "crossfit_routed_route_oof_balanced_accuracy": 0.6446574059727758,
+  "crossfit_route_delta": -0.00601769100651639,
+  "folds_global_improved": 3,
+  "global_delta_mean": -7.92392661741248e-05,
+  "global_delta_std": 0.0002098303651742043,
+  "deployment_alpha": 0.1,
+  "deployment_specialist_weights": {
+    "CatBoost": 1.0,
+    "XGBoost": 0.0,
+    "LightGBM": 0.0
+  },
+  "test_labels_changed": 38,
+  "prediction_counts": {
+    "at-risk": 240314,
+    "unhealthy": 33705,
+    "fit": 21734
+  },
+  "elapsed_seconds": 94.91210198402405,
+  "device": "multicore CPU; no Apple MPS backend for these libraries",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O"
+  ,"decision": "rejected; not submitted"
+}
