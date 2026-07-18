@@ -421,3 +421,145 @@ The router must leave every other row on the original ensemble. This isolates th
 - The auxiliary models generate point estimates, which discard predictive uncertainty.
 - The final test retrained CatBoost only. It intentionally did not rebuild XGBoost, LightGBM, or the full ensemble after the CatBoost-level test failed overall.
 - The auxiliary validation scores measure prediction on naturally observed values; missing values could follow a different, unobservable mechanism.
+
+---
+
+## Experiment 003 — Native-NaN XGBoost under trusted 5-fold CV
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed and accepted as the new XGBoost representation. Not yet submitted as a standalone model.
+
+### Question
+
+Does preserving all numerical and categorical NaNs for XGBoost's learned default split directions outperform the baseline representation of median/mode imputation plus explicit numerical missing indicators?
+
+### Motivation
+
+Experiment 001 showed that missingness—not numerical outliers—is the dominant error mechanism. A Kaggle discussion reported a large gain from letting XGBoost route NaNs natively. Our original XGBoost did not do this: numerical columns were median-imputed with indicators and categorical columns were mode-imputed then ordinal-encoded.
+
+### Trusted CV contract established here
+
+- Splitter: `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`.
+- Metric: balanced accuracy.
+- Every row receives exactly one out-of-fold prediction.
+- Fold assignments are saved and must be reused in subsequent experiments.
+- Report mean, sample standard deviation, OOF score, per-class recall, and fold-level deltas.
+- Model comparisons use identical folds and target encoding.
+- Target encoding: `unhealthy=0`, `at-risk=1`, `fit=2`.
+
+This replaces the single 80/20 holdout as the trusted experiment framework. The earlier holdout remains useful as historical baseline evidence but is no longer sufficient for accepting small changes.
+
+### Controlled configurations
+
+Both configurations used the same feature engineering, class weights, model hyperparameters, and fold rows.
+
+#### Pre-imputed XGBoost
+
+- Numerical values: median imputation with missing indicators.
+- Categorical values: most-frequent imputation followed by ordinal encoding.
+- Unknown categorical values: `-1`.
+
+#### Native-NaN XGBoost
+
+- Numerical NaNs remained NaN.
+- Categorical columns used pandas categorical dtype.
+- Categorical NaNs remained NaN.
+- Category dictionaries were learned from the fitting fold only.
+- Unknown validation categories became NaN and followed learned missing paths.
+- `enable_categorical=True` and `missing=np.nan`.
+
+### Shared model settings
+
+- XGBoost 3.2.0.
+- `n_estimators=1000`.
+- `learning_rate=0.05`.
+- `max_depth=8`.
+- `min_child_weight=15`.
+- `subsample=0.85`.
+- `colsample_bytree=0.8`.
+- `reg_lambda=5`.
+- `tree_method='hist'`.
+- Fold-specific balanced sample weights.
+- `random_state=42`.
+
+### Device and parallelism
+
+- Device: CPU. XGBoost on this Apple Silicon environment does not provide an Apple MPS backend.
+- Parallelism: `n_jobs=-1` within each fold.
+- Folds ran sequentially to avoid CPU oversubscription and memory contention between simultaneous 690k-row fits.
+- Total runtime: approximately 450 seconds.
+
+### Fold results
+
+| Fold | Pre-imputed | Native NaN | Native gain |
+|---:|---:|---:|---:|
+| 0 | 0.934884 | **0.947658** | +0.012774 |
+| 1 | 0.937602 | **0.948132** | +0.010529 |
+| 2 | 0.936568 | **0.946293** | +0.009725 |
+| 3 | 0.934687 | **0.946027** | +0.011340 |
+| 4 | 0.933834 | **0.944176** | +0.010342 |
+
+Native NaNs won all five folds. The paired gain was **+0.010942 ± 0.001176**, with a minimum fold gain of +0.009725.
+
+### Aggregate results
+
+| Configuration | CV balanced accuracy | CV standard deviation | OOF accuracy | OOF errors |
+|---|---:|---:|---:|---:|
+| Pre-imputed | 0.935515 | 0.001531 | 0.936244 | 43,997 |
+| Native NaN | **0.946457** | 0.001554 | **0.947415** | **36,288** |
+| Difference | **+0.010942** | — | +0.011171 | **-7,709** |
+
+Because every fold has nearly identical size and stratification, the aggregate OOF balanced accuracy equals the fold mean to the displayed precision.
+
+### Per-class OOF recall
+
+| Configuration | Unhealthy recall | At-risk recall | Fit recall |
+|---|---:|---:|---:|
+| Pre-imputed | 0.942035 | 0.936214 | 0.928297 |
+| Native NaN | **0.950021** | **0.947538** | **0.941813** |
+| Difference | +0.007986 | +0.011324 | +0.013516 |
+
+Native handling improves every class, with the largest recall improvement for `fit`. This is not a majority-class-only accuracy gain.
+
+### Confusion reduction
+
+- Pre-imputed OOF errors: 43,997.
+- Native-NaN OOF errors: 36,288.
+- Errors removed: **7,709**, or 17.5% of the pre-imputed error count.
+- True `at-risk` rows predicted as `unhealthy` fell from 23,514 to 19,404.
+- True `at-risk` rows predicted as `fit` fell from 14,283 to 11,683.
+
+### Decision
+
+**Accept native missing-value routing for all future XGBoost experiments.**
+
+The gain is large, appears on every fold, improves all three class recalls, and directly matches the error mechanism found in Experiment 001. Pre-imputation is now deprecated for XGBoost in this project.
+
+This standalone native XGBoost CV score is still below the historical one-split ensemble score of 0.95014. Those numbers are not directly comparable because the ensemble figure used one holdout. The ensemble must be rebuilt using these fixed folds before deciding whether native XGBoost replaces or blends with CatBoost.
+
+### Recommended next experiment
+
+Experiment 004 should test class-prior probability correction on the saved native-NaN OOF probabilities, then compare it with sample weighting. This is inexpensive because probability correction can first be evaluated without refitting. Any correction parameters must be learned fold-safely or through nested/cross-fitted logic before final acceptance.
+
+After that, rebuild CatBoost and the ensemble using the same saved five folds. Multi-seed bagging should remain a later variance-reduction step, not the next representation experiment.
+
+### Artifacts
+
+- `experiment_003_native_nan_xgboost.py` — reproducible five-fold experiment.
+- `experiment_003_artifacts/fold_assignments.csv` — fixed reusable fold assignment for every training ID.
+- `experiment_003_artifacts/fold_scores.csv` — fold metrics and per-class recall.
+- `experiment_003_artifacts/oof_predictions.npz` — targets, fold IDs, and OOF probabilities for both representations.
+- `experiment_003_artifacts/summary.csv` — aggregate CV and OOF metrics.
+- `experiment_003_artifacts/metadata.json` — versions, parameters, device, parallelism, runtime, and confusion matrices.
+
+### Limitations
+
+- Both models use class weights. Prior correction has not yet been tested.
+- Hyperparameters were inherited from the baseline rather than tuned under five-fold CV.
+- The comparison isolates missing-value representation; it does not establish the best XGBoost configuration.
+- The current public leaderboard reference is from the old ensemble, not this standalone native-NaN XGBoost.

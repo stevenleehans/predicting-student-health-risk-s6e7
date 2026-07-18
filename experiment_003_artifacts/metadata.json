@@ -1,0 +1,68 @@
+{
+  "random_state": 42,
+  "n_splits": 5,
+  "split": "StratifiedKFold(shuffle=True)",
+  "metric": "balanced_accuracy",
+  "device": "cpu (XGBoost has no Apple MPS backend)",
+  "parallelism": "n_jobs=-1 within each fold; folds run sequentially to avoid CPU oversubscription",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "versions": {
+    "pandas": "2.3.3",
+    "numpy": "2.1.3",
+    "sklearn": "1.6.1",
+    "xgboost": "3.2.0"
+  },
+  "model_params": {
+    "objective": "multi:softprob",
+    "num_class": 3,
+    "eval_metric": "mlogloss",
+    "n_estimators": 1000,
+    "learning_rate": 0.05,
+    "max_depth": 8,
+    "min_child_weight": 15,
+    "subsample": 0.85,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 5,
+    "tree_method": "hist",
+    "device": "cpu",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "elapsed_seconds": 449.95965695381165,
+  "confusion_matrices": {
+    "preimputed": [
+      [
+        54378,
+        3185,
+        161
+      ],
+      [
+        23514,
+        554764,
+        14283
+      ],
+      [
+        188,
+        2666,
+        36949
+      ]
+    ],
+    "native_nan": [
+      [
+        54839,
+        2692,
+        193
+      ],
+      [
+        19404,
+        561474,
+        11683
+      ],
+      [
+        210,
+        2106,
+        37487
+      ]
+    ]
+  }
+}

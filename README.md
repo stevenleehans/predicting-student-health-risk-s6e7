@@ -9,7 +9,7 @@ Team workspace for the Kaggle competition **Predicting Student Health Risk**.
 - Model: CatBoost/XGBoost/LightGBM probability ensemble
 - Blend: 80% CatBoost, 10% XGBoost, 10% LightGBM
 
-The current validation figure is based on one stratified 80/20 holdout. The next modeling framework will use fixed 5-fold stratified cross-validation with reusable folds and out-of-fold predictions.
+The original ensemble validation figure is based on one stratified 80/20 holdout. Experiment 003 establishes the trusted evaluation framework: fixed 5-fold stratified cross-validation with reusable fold assignments and out-of-fold predictions.
 
 ## Repository contents
 
@@ -20,14 +20,15 @@ The current validation figure is based on one stratified 80/20 holdout. The next
 - `experiments.md` — experiment registry, results, decisions, and limitations.
 - `experiment_001_error_analysis.py` — error, missingness, subgroup, confidence, and outlier analysis.
 - `experiment_002_two_stage_imputation.py` — two-stage stress/sleep prediction experiment.
-- `experiment_001_artifacts/` and `experiment_002_artifacts/` — compact result tables.
+- `experiment_003_native_nan_xgboost.py` — fixed 5-fold comparison of pre-imputation versus native-NaN XGBoost.
+- `experiment_001_artifacts/`, `experiment_002_artifacts/`, and `experiment_003_artifacts/` — reproducible result tables and OOF outputs.
 
 ## Main findings so far
 
 1. Numerical outliers do not explain the baseline errors.
 2. Missing `stress_level` and `sleep_duration` account for most difficult rows.
 3. Predicting those missing values globally did not improve balanced accuracy.
-4. XGBoost in the current baseline uses pre-imputation plus missing indicators; native NaN routing is the next high-priority test.
+4. Native-NaN XGBoost improved 5-fold balanced accuracy from **0.93552 to 0.94646**, winning all five folds.
 
 ## Data setup
 
