@@ -701,3 +701,90 @@ Experiment 005 should test class-wise probability multipliers on the saved OOF b
 - Only one seed was used per fold. Fold bagging reduces variance, but this is not multi-seed bagging.
 - Test probabilities come from fold models rather than models retrained on 100% of the data. This is deliberate bagging but changes the training size per model.
 - The public leaderboard is only a subset of the hidden test labels; the private score may reorder small gains.
+
+---
+
+## Experiment 005 — Cross-fitted class probability correction
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed, submitted, and rejected. Experiment 004 remains the accepted model.
+
+### Question
+
+Can constrained class-wise probability multipliers improve balanced accuracy by correcting the native ensemble's lower recall on `at-risk` rows?
+
+### Method
+
+- Used the saved Experiment 004 OOF blend probabilities.
+- Fixed `at-risk` as the reference multiplier at 1.0.
+- Searched conservative multipliers from 0.75 to 1.10 for `unhealthy` and `fit`.
+- Used coordinate search rather than a large unrestricted optimizer.
+- For every held-out fold, learned multipliers using only the other four folds and then evaluated on the untouched fold.
+- Saved fold-bagged test probabilities from the deterministic Experiment 004 rebuild so future probability experiments do not require retraining.
+
+### Cross-fitted results
+
+| Fold | Base | Corrected | Delta | Unhealthy multiplier | Fit multiplier |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 0.949907 | 0.949930 | +0.000023 | 1.0950 | 0.9725 |
+| 1 | 0.951460 | 0.951260 | -0.000200 | 1.0950 | 0.9900 |
+| 2 | 0.949100 | 0.949121 | +0.000022 | 1.0925 | 0.9900 |
+| 3 | 0.949053 | 0.949159 | +0.000107 | 1.0950 | 0.9900 |
+| 4 | 0.947673 | 0.948025 | +0.000351 | 1.0900 | 0.9975 |
+
+- Base OOF balanced accuracy: 0.949439.
+- Cross-fitted corrected OOF: **0.949499**.
+- Cross-fitted gain: **+0.000060**.
+- Fold delta standard deviation: 0.000198.
+- Improved folds: 4 of 5.
+- Full-OOF optimized score: 0.949550; this is optimistic because the same labels selected and evaluated the multipliers.
+
+Deployment multipliers selected on complete OOF predictions:
+
+- `unhealthy`: 1.095.
+- `at-risk`: 1.000.
+- `fit`: 0.990.
+
+Only 409 of 295,753 test labels changed.
+
+### Kaggle result
+
+- Submission file: `submission_probability_corrected_ensemble.csv`.
+- Submission ID: `54806732`.
+- Corrected public score: **0.94884**.
+- Accepted Experiment 004 score: **0.94943**.
+- Public difference: **-0.00059**.
+
+### Decision
+
+**Reject probability correction and retain the uncorrected Experiment 004 ensemble.**
+
+The cross-fitted local improvement was much smaller than its fold-to-fold variability. Although four folds improved, the +0.000060 mean gain was not strong enough to survive the public leaderboard subset. This is not evidence that the CV is broadly untrustworthy: Experiment 003's large native-NaN gain and Experiment 004's ensemble gain transferred. It shows that changes far below approximately one fold-delta standard deviation should not be accepted based on sign alone.
+
+Future acceptance criteria should require both:
+
+1. Positive mean paired fold gain.
+2. A gain materially larger than its paired fold standard deviation or a clear improvement on every fold.
+
+### Impact on the 0.951 target
+
+Probability correction is not the lever that will move the project from 0.94943 to 0.951. Reaching 0.951 requires a larger source of new signal rather than boundary adjustments affecting only hundreds of rows.
+
+### Recommended next lever
+
+Test missing-pattern specialist routing using already identified hard subsets, beginning with rows where both `stress_level` and `sleep_duration` are missing. Unlike global correction, this targets a subgroup where Experiment 002 found a +0.00823 balanced-accuracy improvement. The router must be evaluated cross-fitted and must leave all other rows on Experiment 004 probabilities.
+
+### Artifacts
+
+- `experiment_005_probability_correction.py` — cross-fitted multiplier optimization and corrected submission build.
+- `experiment_005_artifacts/crossfit_fold_results.csv` — fold-level base/corrected comparison and learned multipliers.
+- `experiment_005_artifacts/optimization_history.csv` — fold-specific coordinate-search history.
+- `experiment_005_artifacts/full_optimization_history.csv` — complete-OOF search history.
+- `experiment_005_artifacts/crossfit_predictions.npz` — cross-fitted predictions and deployment multipliers.
+- `experiment_005_artifacts/summary.json` — local metrics, test changes, Kaggle score, and decision.
+- `experiment_004_artifacts/test_probabilities.npz` — reusable fold-bagged test probabilities for all component models and the accepted blend.

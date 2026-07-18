@@ -218,6 +218,13 @@ np.savez_compressed(
     catboost=oof["CatBoost"], xgboost=oof["XGBoost"],
     lightgbm=oof["LightGBM"], blend=blend_oof.astype(np.float32),
 )
+np.savez_compressed(
+    OUT / "test_probabilities.npz",
+    catboost=test_prob["CatBoost"].astype(np.float32),
+    xgboost=test_prob["XGBoost"].astype(np.float32),
+    lightgbm=test_prob["LightGBM"].astype(np.float32),
+    blend=blend_test.astype(np.float32),
+)
 metadata = {
     "weights": dict(zip(names, best_weights.tolist())),
     "best_oof_balanced_accuracy": float(best_score),

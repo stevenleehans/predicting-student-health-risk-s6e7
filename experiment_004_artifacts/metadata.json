@@ -20,6 +20,6 @@
   },
   "device": "multicore CPU; no Apple MPS backend for these libraries",
   "parallelism": "all models use all CPU threads within each sequential fold",
-  "elapsed_seconds": 2386.500876188278,
+  "elapsed_seconds": 2463.6897621154785,
   "platform": "macOS-27.0-arm64-arm-64bit-Mach-O"
 }

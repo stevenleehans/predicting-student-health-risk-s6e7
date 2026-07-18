@@ -1,0 +1,27 @@
+{
+  "base_oof_balanced_accuracy": 0.9494387728642187,
+  "crossfit_corrected_oof_balanced_accuracy": 0.9494992701645634,
+  "crossfit_delta": 6.0497300344630744e-05,
+  "crossfit_fold_delta_mean": 6.050427928459001e-05,
+  "crossfit_fold_delta_std": 0.00019842328479132475,
+  "folds_improved": 4,
+  "full_oof_optimized_balanced_accuracy": 0.949549891746988,
+  "full_oof_optimistic_delta": 0.00011111888276926774,
+  "deployment_multipliers": {
+    "unhealthy": 1.0949999999999926,
+    "at-risk": 1.0,
+    "fit": 0.9899999999999949
+  },
+  "elapsed_seconds": 29.401330947875977,
+  "test_labels_changed": 409,
+  "corrected_prediction_counts": {
+    "at-risk": 239981,
+    "unhealthy": 34075,
+    "fit": 21697
+  },
+  "kaggle_submission_id": 54806732,
+  "public_score": 0.94884,
+  "accepted_ensemble_public_score": 0.94943,
+  "public_delta": -0.00059,
+  "decision": "rejected"
+}
