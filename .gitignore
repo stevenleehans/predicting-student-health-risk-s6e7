@@ -1,0 +1,26 @@
+# Kaggle data and generated submissions
+train.csv
+test.csv
+sample_submission.csv
+submission*.csv
+
+# Large reproducible row-level diagnostics
+experiment_001_artifacts/validation_predictions.csv
+
+# Python and notebook caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Local environments and tooling
+.venv/
+venv/
+.env
+.DS_Store
+catboost_info/
+
+# Model binaries
+*.cbm
+*.json.ubj
+*.pkl
+*.joblib

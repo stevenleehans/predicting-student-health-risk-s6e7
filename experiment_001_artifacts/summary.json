@@ -1,0 +1,21 @@
+{
+  "random_state": 42,
+  "train_rows": 552070,
+  "validation_rows": 138018,
+  "balanced_accuracy": 0.9501365069535003,
+  "accuracy": 0.9409642220579925,
+  "error_count": 8148,
+  "weights": {
+    "CatBoost": 0.8,
+    "XGBoost": 0.1,
+    "LightGBM": 0.09999999999999995
+  },
+  "single_model_balanced_accuracy": {
+    "CatBoost": 0.9499152949926414,
+    "XGBoost": 0.9321879912855286,
+    "LightGBM": 0.9373706004939808
+  },
+  "mean_confidence_correct": 0.9368571423814522,
+  "mean_confidence_error": 0.7741683496689431,
+  "high_confidence_errors_ge_0_90": 1419
+}

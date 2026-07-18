@@ -1,0 +1,3 @@
+has_outlier,rows,errors,error_rate,mean_confidence
+False,138016,8148,0.059036633433804775,0.9272524023827163
+True,2,0,0.0,0.9466134643780169

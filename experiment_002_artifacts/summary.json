@@ -1,0 +1,9 @@
+{
+  "baseline_catboost_balanced_accuracy": 0.9499152949926414,
+  "two_stage_catboost_balanced_accuracy": 0.949558678906509,
+  "delta": -0.0003566160861323553,
+  "stress_aux_accuracy": 0.4588046343070503,
+  "sleep_aux_mae": 0.8709994272878503,
+  "sleep_aux_rmse": 1.1023055355568017,
+  "importance_method": "model-native normalized importance"
+}
