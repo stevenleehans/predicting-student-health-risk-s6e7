@@ -236,6 +236,7 @@ def run_tabpfn(train, test, y, fold_id):
     rows = []
     for fold in range(N_FOLDS):
         started = time.time()
+        print(f"[TabPFN-3] fold {fold + 1}/{N_FOLDS} starting", flush=True)
         fit = fold_id != fold
         valid = ~fit
         model = TabPFNClassifier(
@@ -252,16 +253,27 @@ def run_tabpfn(train, test, y, fold_id):
             valid_chunks.append(model.predict_proba(part))
         fold_probability = reorder_probabilities(np.vstack(valid_chunks), model.classes_)
         oof[valid] = fold_probability
-        test_chunks = []
-        for start in range(0, len(x_test), 50000):
-            test_chunks.append(model.predict_proba(x_test.iloc[start:start + 50000]))
-        test_probability += reorder_probabilities(np.vstack(test_chunks), model.classes_) / N_FOLDS
+        # CV is the goal of this run. Test inference is deterministic but slow,
+        # so run it once with the final fold model instead of repeating the same
+        # 295k-row pass five times. This does not change any OOF score.
+        test_chunks = None
+        if fold == N_FOLDS - 1:
+            test_chunks = []
+            for start in range(0, len(x_test), 50000):
+                test_chunks.append(model.predict_proba(x_test.iloc[start:start + 50000]))
+            test_probability = reorder_probabilities(np.vstack(test_chunks), model.classes_)
+        fold_score = float(balanced_accuracy_score(y[valid], oof[valid].argmax(1)))
         rows.append({
             "candidate": "tabpfn3", "fold": fold,
-            "balanced_accuracy": float(balanced_accuracy_score(y[valid], oof[valid].argmax(1))),
+            "balanced_accuracy": fold_score,
             "runtime_minutes": (time.time() - started) / 60,
         })
         save_state("tabpfn_checkpoint.npz", oof=oof, test=test_probability, completed_fold=fold)
+        print(
+            f"[TabPFN-3] fold {fold + 1}/{N_FOLDS} BA={fold_score:.6f} "
+            f"runtime={(time.time() - started) / 60:.1f}m",
+            flush=True,
+        )
         del model, valid_chunks, test_chunks
         gc.collect()
         torch.cuda.empty_cache()
@@ -601,6 +613,7 @@ def main():
         "best_oof_balanced_accuracy": float(summary_frame.iloc[0]["oof_balanced_accuracy"]),
         "baseline_oof_balanced_accuracy": float(summary[0]["oof_balanced_accuracy"]),
         "rule_diagnostics": rule_diagnostics,
+        "tabpfn_test_probability": "single final-fold model; five-fold OOF is unchanged",
         "stack_models": stack_names,
         "full_stack_weights": {name: float(full_weights[i]) for i, name in enumerate(stack_names)},
         "ft_transformer_full_beta": full_beta,

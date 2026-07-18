@@ -1280,6 +1280,7 @@ The resolver reduces ordinary mistakes by 1,151 but loses 0.002234 balanced accu
 - Kaggle MCP's `save_notebook` currently drops repeated competition/model attachment fields. The official Kaggle CLI was used narrowly to apply those two attachments to the MCP-created notebook; the corrected metadata was then verified through MCP.
 - Early failed versions consumed only seconds and exposed two packaging issues: absent inputs from the MCP attachment bug, then nullable pandas string comparisons in the exact-rule mask. Both were fixed before the long model run.
 - The final stack search uses a deterministic pairwise 0.05 weight grid plus pure, uniform, and established HGBC/RealMLP candidates. This replaced an unnecessarily expensive 5,000-vector random simplex search.
+- Version 5 preserves all five trusted TabPFN OOF folds but performs the 295,753-row test inference only once with the final fold model. Repeating test inference five times cannot change CV and would add roughly 1.5 hours; removing it reduces the estimated total GPU runtime from about 8-9 hours to about 6-7 hours. The final TabPFN test probabilities are therefore a single-fold deployment proxy, while all reported OOF scores remain full five-fold results.
 
 ### Pending artifacts
 
