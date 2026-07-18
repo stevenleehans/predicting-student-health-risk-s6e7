@@ -584,3 +584,120 @@ After that, rebuild CatBoost and the ensemble using the same saved five folds. M
 - Hyperparameters were inherited from the baseline rather than tuned under five-fold CV.
 - The comparison isolates missing-value representation; it does not establish the best XGBoost configuration.
 - The current public leaderboard reference is from the old ensemble, not this standalone native-NaN XGBoost.
+
+---
+
+## Experiment 004 — Fold-bagged native ensemble
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed, submitted, and accepted as the current best public submission.
+
+### Question
+
+Does combining native-missing CatBoost, native-NaN XGBoost, and native-NaN LightGBM on the trusted five folds improve over the individual models and the previous ensemble?
+
+### Missing-value decision
+
+Global imputation was not reused. Experiment 002 showed that predicted stress/sleep values reduced overall balanced accuracy, and Experiment 003 showed a large, stable gain from native XGBoost missing routing.
+
+- CatBoost: numerical NaNs remained native; categorical missingness used a dedicated `<MISSING>` category because CatBoost requires categorical inputs as text/category values.
+- XGBoost: numerical and categorical NaNs remained native, with pandas categorical dtype and `enable_categorical=True`.
+- LightGBM: numerical NaNs remained native; categorical inputs used pandas categorical dtype so missing categories used native missing codes.
+
+Missingness was therefore preserved as signal in every library. No median or most-frequent replacement was applied.
+
+### Validation and bagging
+
+- Reused the exact five fold assignments from Experiment 003.
+- Every model generated aligned OOF probabilities.
+- Each fold model also predicted the test data.
+- Test probabilities were averaged across five fold models for each library.
+- The final submission therefore includes fold bagging in addition to model blending.
+- Models used all CPU threads within a fold; folds ran sequentially to avoid oversubscription.
+- Apple MPS was unavailable for CatBoost, XGBoost, and LightGBM.
+- Total runtime: approximately 2,387 seconds (39.8 minutes).
+
+### Fold scores
+
+| Fold | CatBoost | XGBoost | LightGBM |
+|---:|---:|---:|---:|
+| 0 | 0.949564 | 0.947658 | 0.948871 |
+| 1 | 0.951198 | 0.948132 | 0.949099 |
+| 2 | 0.948966 | 0.946293 | 0.947162 |
+| 3 | 0.949015 | 0.946027 | 0.947531 |
+| 4 | 0.947715 | 0.944176 | 0.945068 |
+
+CatBoost led every fold. The relative fold difficulty was consistent across all three libraries, supporting the stability of the fixed split.
+
+### OOF results
+
+| Model | OOF balanced accuracy | OOF accuracy | OOF errors | Unhealthy recall | At-risk recall | Fit recall |
+|---|---:|---:|---:|---:|---:|---:|
+| CatBoost | 0.949292 | 0.938435 | 42,485 | 0.963239 | 0.935286 | 0.949351 |
+| XGBoost | 0.946457 | **0.947415** | **36,288** | 0.950021 | **0.947538** | 0.941813 |
+| LightGBM | 0.947546 | 0.946200 | 37,127 | 0.953624 | 0.945668 | 0.943346 |
+| Blend | **0.949439** | 0.940351 | 41,163 | 0.961645 | 0.937698 | 0.948974 |
+
+Balanced accuracy and ordinary accuracy prefer different models. XGBoost makes fewer total errors because it is stronger on the majority `at-risk` class, while class-balanced CatBoost has higher macro recall. The competition metric correctly favors CatBoost and the blend.
+
+### Blend search
+
+A coarse convex grid with 0.05 increments was searched against the aligned OOF probabilities. Fine-grained weights were intentionally avoided because the expected gain is small and tiny weight differences would be difficult to trust.
+
+Best weights:
+
+- CatBoost: **0.80**.
+- XGBoost: **0.05**.
+- LightGBM: **0.15**.
+
+The blend improved OOF balanced accuracy from CatBoost's 0.949292 to **0.949439**, a gain of **+0.000147**. This is small, so leaderboard confirmation was important.
+
+### Kaggle result
+
+- Submission file: `submission_native_ensemble.csv`.
+- Submission ID: `54805913`.
+- Public leaderboard balanced accuracy: **0.94943**.
+- Previous best public score: 0.94924.
+- Public improvement: **+0.00019**.
+- Standalone native-XGBoost public score: 0.94800.
+
+The small OOF gain transferred almost exactly to the public leaderboard. This is strong evidence that the fixed five-fold CV is directionally trustworthy even for small changes, although private-leaderboard uncertainty remains.
+
+### Decision
+
+**Accept the 0.80 CatBoost / 0.05 XGBoost / 0.15 LightGBM fold-bagged native ensemble as the current best model.**
+
+Continue to preserve missingness natively. Do not return to global median/mode imputation or hard two-stage imputation.
+
+### Remaining high-value levers
+
+1. **OOF class-prior/probability correction.** Balanced sample weights can distort calibration. Test class-wise probability multipliers on saved OOF probabilities, then cross-fit or use a sufficiently coarse/stable correction before submission.
+2. **Missing-pattern specialist routing.** Experiment 002 improved the both-stress-and-sleep-missing subset. Test a routed probability blend only for that subset, leaving all other rows on the accepted ensemble.
+3. **Native CatBoost/LightGBM tuning.** Tune one model at a time on fixed folds—particularly class weighting, depth/leaves, regularization, and early-stopping behavior.
+4. **Original/source dataset augmentation.** Playground data is synthetic; identify and validate the original 50k health dataset without leaking validation labels. Distribution alignment and deduplication are mandatory.
+5. **Missingness interactions.** Add compact pattern features or targeted interactions without replacing NaNs. Ablate them under the fixed folds.
+6. **Multi-seed bagging.** Use only after the representation and probability correction are stable. It is a variance-reduction lever, not the main signal lever.
+
+### Recommended next experiment
+
+Experiment 005 should test class-wise probability multipliers on the saved OOF blend and individual-model probabilities. Start with a coarse, constrained search and measure fold-by-fold changes. Because optimization and evaluation on the same OOF labels can overfit, acceptance should require either cross-fitted multiplier selection or stability across independently optimized folds.
+
+### Artifacts
+
+- `experiment_004_native_ensemble.py` — complete fold training, native missing handling, OOF blend search, fold-bagged test prediction, and submission build.
+- `experiment_004_artifacts/fold_scores.csv` — fold-level model scores.
+- `experiment_004_artifacts/summary.csv` — OOF model and blend metrics.
+- `experiment_004_artifacts/oof_predictions.npz` — aligned OOF probabilities and targets.
+- `experiment_004_artifacts/metadata.json` — weights, runtime, device, prediction distribution, submission ID, and public score.
+
+### Limitations
+
+- Blend weights were selected and evaluated on the same complete OOF labels, so the +0.000147 local gain may be mildly optimistic.
+- Only one seed was used per fold. Fold bagging reduces variance, but this is not multi-seed bagging.
+- Test probabilities come from fold models rather than models retrained on 100% of the data. This is deliberate bagging but changes the training size per model.
+- The public leaderboard is only a subset of the hidden test labels; the private score may reorder small gains.

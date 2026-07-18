@@ -1,0 +1,25 @@
+{
+  "weights": {
+    "CatBoost": 0.8,
+    "XGBoost": 0.05,
+    "LightGBM": 0.14999999999999997
+  },
+  "best_oof_balanced_accuracy": 0.9494387728642187,
+  "kaggle_submission_id": 54805913,
+  "public_score": 0.94943,
+  "previous_best_public_score": 0.94924,
+  "prediction_counts": {
+    "at-risk": 240344,
+    "unhealthy": 33671,
+    "fit": 21738
+  },
+  "prediction_shares": {
+    "at-risk": 0.8126510973684121,
+    "unhealthy": 0.11384838023621062,
+    "fit": 0.07350052239537723
+  },
+  "device": "multicore CPU; no Apple MPS backend for these libraries",
+  "parallelism": "all models use all CPU threads within each sequential fold",
+  "elapsed_seconds": 2386.500876188278,
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O"
+}
