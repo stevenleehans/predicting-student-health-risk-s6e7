@@ -25,6 +25,8 @@ The original ensemble validation figure is based on one stratified 80/20 holdout
 - `experiment_008_original_generator_priors.py` — original 50k source-data priors and augmentation test.
 - `experiment_009_unweighted_hgbc_prior.py` — unweighted native-NaN HGBC with fold-safe prior correction.
 - `experiment_010_realmlp_mps.py` — 16-member RealMLP on Apple MPS and fold-safe HGBC blend.
+- `kaggle_experiment_011_options_123_gpu.py` — public Kaggle T4 x2 package testing the exact-rule resolver, TabPFN-3, FT-Transformer-v2, and a restricted fold-safe stack.
+- `kernel-metadata.json` — reproducible public Kaggle package configuration and attached competition/model sources.
 - `experiment_001_artifacts/` through `experiment_010_artifacts/` — reproducible result tables and OOF outputs.
 
 ## Main findings so far
@@ -39,6 +41,7 @@ The original ensemble validation figure is based on one stratified 80/20 holdout
 8. Original-data generator priors and 50k-row source augmentation did not beat HGBC (**0.950106 / 0.949680 OOF**).
 9. Unweighted HGBC with honest prior correction scored **0.950108 OOF**, so balanced training remains preferred.
 10. RealMLP reached **0.950515 OOF / 0.95039 public**; its fold-safe HGBC blend reached the current best **0.950636 OOF / 0.95045 public**.
+11. The exact-rule disagreement resolver was rejected at **0.948402 OOF**; the [Experiment 011 GPU package](https://www.kaggle.com/code/stevenleehans/s6e7-options-1-2-3-honest-gpu-cv-v2) is running TabPFN-3 and FT-Transformer-v2 next.
 
 ## Data setup
 

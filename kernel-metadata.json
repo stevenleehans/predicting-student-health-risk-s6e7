@@ -1,0 +1,24 @@
+{
+  "id": "stevenleehans/s6e7-options-1-2-3-honest-gpu-cv-v2",
+  "id_no": 127785694,
+  "title": "S6E7 Options 1 2 3 - Honest GPU CV v2",
+  "code_file": "kaggle_experiment_011_options_123_gpu.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [
+    "playground-series-s6e7"
+  ],
+  "model_sources": [
+    "prior-labsai/tabpfn-3/PyTorch/default/1"
+  ],
+  "machine_shape": "NvidiaTeslaT4"
+}

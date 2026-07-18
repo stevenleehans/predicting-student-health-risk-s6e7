@@ -1228,3 +1228,62 @@ Treat it as a validated incremental gain, not a major breakthrough: +0.000440 OO
 - `experiment_010_artifacts/checkpoint_predictions.npz` — per-fold recovery checkpoint.
 - `experiment_010_artifacts/oof_predictions.npz`, `test_probabilities.npz`, and `metadata.json` — final probabilities and full environment/configuration record.
 - `submission_experiment_010_realmlp.csv` and `submission_experiment_010_hgbc_realmlp_blend.csv` — validated local candidates, intentionally excluded from Git.
+
+---
+
+## Experiment 011 — Exact-rule resolver, TabPFN-3, and FT-Transformer-v2 restricted stack
+
+### Date
+
+2026-07-18
+
+### Status
+
+Running on Kaggle NVIDIA T4 x2. Option 1 is completed and rejected; Options 2 and 3 are executing with recoverable per-stage checkpoints.
+
+### Question
+
+Can the three highest-ranked remaining community and error-analysis levers move the trusted fixed-fold CV above Experiment 010's 0.950635921 baseline without using the public leaderboard as a tuning set?
+
+### Package
+
+- Public Kaggle package: https://www.kaggle.com/code/stevenleehans/s6e7-options-1-2-3-honest-gpu-cv-v2
+- Fixed folds: Experiment 003 / `StratifiedKFold(5, shuffle=True, random_state=42)`.
+- GPU shape: `NvidiaTeslaT4`, exposed by Kaggle as T4 x2.
+- Competition source and TabPFN-3 model weights are attached to the package.
+- Experiment 010 HGBC and RealMLP OOF/test probabilities are loaded unchanged from the public GitHub repository.
+
+### Ranked options in the package
+
+1. A fold-safe CatBoost resolver trained only where the exact source-generator rule and Experiment 010 blend disagree.
+2. TabPFN-3 with native categorical and missing-value handling, two estimators, balanced probabilities, five fixed OOF folds, chunked validation/test inference, and a checkpoint after every fold.
+3. FT-Transformer-v2 with the community's 39 exact-value multiclass target-encoding features, four-member in-model ensemble, fixed 16-epoch budget, fold-safe prior correction, and a restricted nested stack over HGBC, RealMLP, TabPFN-3, and FT-Transformer-v2.
+
+### Option 1 result — exact-rule disagreement resolver
+
+The source rule and Experiment 010 blend disagree on 2,586 of the 511,675 rows where sleep duration, stress level, and physical activity level are all present. The rule alone is correct on 1,790 disagreements, the blend alone on 755, and both are wrong on 41.
+
+| Candidate | OOF balanced accuracy | Accuracy | Errors | Unhealthy recall | At-risk recall | Fit recall |
+|---|---:|---:|---:|---:|---:|---:|
+| **Experiment 010 cross-fitted blend** | **0.950636** | 0.939831 | 41,522 | **0.964815** | 0.936687 | **0.950406** |
+| Exact-rule resolver | 0.948402 | **0.941499** | **40,371** | 0.957886 | **0.939476** | 0.947843 |
+
+The resolver reduces ordinary mistakes by 1,151 but loses 0.002234 balanced accuracy because it trades minority recall for majority at-risk recall. This is the wrong trade for the competition metric.
+
+### Option 1 decision
+
+**Reject.** The theoretical exact-rule oracle was real, but the rule-versus-blend winner is not learnable well enough from the available disagreement rows under honest held-out folds. Keep it only as a documented diagnostic and do not blend its hard predictions into the final stack.
+
+### Execution notes
+
+- Kaggle MCP successfully created the public package, enabled NVIDIA GPU, and exposes session logs and outputs.
+- Kaggle MCP's `save_notebook` currently drops repeated competition/model attachment fields. The official Kaggle CLI was used narrowly to apply those two attachments to the MCP-created notebook; the corrected metadata was then verified through MCP.
+- Early failed versions consumed only seconds and exposed two packaging issues: absent inputs from the MCP attachment bug, then nullable pandas string comparisons in the exact-rule mask. Both were fixed before the long model run.
+- The final stack search uses a deterministic pairwise 0.05 weight grid plus pure, uniform, and established HGBC/RealMLP candidates. This replaced an unnecessarily expensive 5,000-vector random simplex search.
+
+### Pending artifacts
+
+- `experiment_011_artifacts/rule_resolver_summary.csv`, `rule_resolver_checkpoint.npz`, and `rule_resolver_diagnostics.json`.
+- `experiment_011_artifacts/tabpfn_checkpoint.npz` after each TabPFN fold.
+- `experiment_011_artifacts/ftt_checkpoint.npz` after each FT-Transformer fold.
+- Final `summary.csv`, `fold_scores.csv`, OOF/test probability archives, metadata, errors, and best-CV submission file.
