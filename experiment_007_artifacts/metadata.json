@@ -1,0 +1,38 @@
+{
+  "random_state": 42,
+  "n_splits": 5,
+  "fold_source": "experiment_003_artifacts/fold_assignments.csv",
+  "metric": "balanced_accuracy",
+  "representation": "13 raw features plus 39 inner-cross-fitted exact-value multiclass target-encoding columns",
+  "categorical_missing": "explicit <MISSING> category",
+  "numeric_missing": "native NaN in raw numeric columns; explicit <MISSING> in target-encoding view",
+  "hgbc_config": {
+    "learning_rate": 0.0627037115235577,
+    "max_iter": 300,
+    "max_leaf_nodes": 33,
+    "min_samples_leaf": 298,
+    "l2_regularization": 0.028912644384523085,
+    "max_bins": 237,
+    "max_features": 0.820265066682815,
+    "early_stopping": true,
+    "categorical_features": "from_dtype",
+    "class_weight": "balanced",
+    "random_state": 42
+  },
+  "base_oof_balanced_accuracy": 0.9494387728642187,
+  "hgbc_oof_balanced_accuracy": 0.9501960945293879,
+  "hgbc_delta_vs_base": 0.000757321665169175,
+  "crossfit_blend_oof_balanced_accuracy": 0.9501511477892435,
+  "crossfit_blend_delta_vs_base": 0.0007123749250247391,
+  "full_oof_deployment_hgbc_weight": 0.84,
+  "full_oof_deployment_blend_score_same_data": 0.9502502752902403,
+  "device": "multicore CPU; sklearn HistGradientBoosting has no Apple MPS backend",
+  "parallelism": "OpenMP/native sklearn parallelism across 12 logical CPUs; folds sequential to control memory",
+  "elapsed_seconds": 99.77033495903015,
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "versions": {
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "sklearn": "1.6.1"
+  }
+}

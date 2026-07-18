@@ -873,3 +873,112 @@ Neither global probability correction nor narrow both-missing routing supplies e
 - `experiment_006_artifacts/crossfit_router_results.csv` — fold-specific routing parameters and effects.
 - `experiment_006_artifacts/specialist_predictions.npz` — specialist OOF/test probabilities and cross-fitted routed predictions.
 - `experiment_006_artifacts/summary.json` — aggregate results and rejection decision.
+
+---
+
+## Experiment 007 — Exact-value target encoding + HistGradientBoosting
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed, submitted, and accepted as the new project leader. The standalone HGBC-TE candidate was selected for Kaggle submission; the blend candidate was rejected by cross-fitted validation.
+
+### Question
+
+Does inner-cross-fitted target encoding of every exact feature value, paired with `HistGradientBoostingClassifier`, provide a large and stable improvement over the accepted Experiment 004 ensemble?
+
+### Research basis
+
+Kaggle MCP research identified exact-value numeric target encoding as the only repeatedly reported representation change with a nested-CV gain near +0.0009 and matching leaderboard transfer. The main references were:
+
+- `gdataranger/s6e7-v0-7-histgradientboosting-target-encoding` — OOF 0.9502, nested gain +0.0009, public LB 0.95036.
+- `redamountassir/ps-s6e7-hgbc-baseline-lb-0-95034-cv-0-95026` — CV 0.95026, public LB 0.95034.
+- `yaoguang516/s6e7-per-value-te-hgbc-0-9505-single-model` — independent per-value TE + HGBC implementation.
+
+### Method
+
+- Reused the fixed five folds from Experiment 003.
+- Used the 13 original features: seven numerical and six categorical.
+- Preserved numerical NaNs in the raw HGBC view.
+- Represented categorical missingness with a dedicated `<MISSING>` category.
+- Created a second feature view where every raw feature, including each exact numerical value, is a string category.
+- Within each outer fitting fold, used `TargetEncoder(cv=5, target_type='multiclass', smooth='auto')` to create 39 leakage-controlled target-encoding columns.
+- Concatenated the 39 encoded columns with the 13 raw columns.
+- Trained HGBC with the published operating point: learning rate 0.0627037, 300 maximum iterations, 33 leaves, 298 minimum samples per leaf, 237 bins, 0.820265 maximum-feature fraction, balanced class weights, and early stopping.
+- Used multicore CPU because scikit-learn HGBC has no Apple MPS backend. OpenMP used the machine's 12 logical CPUs; folds were sequential to control memory.
+- Compared the standalone model against Experiment 004 and tested an honest cross-fitted probability blend. Each held-out fold's blend weight was selected using only the other four folds.
+
+### Fold results
+
+| Fold | Rows | HGBC-TE balanced accuracy | Iterations |
+|---:|---:|---:|---:|
+| 0 | 138,018 | 0.950714 | 100 |
+| 1 | 138,018 | 0.951810 | 87 |
+| 2 | 138,018 | 0.949515 | 98 |
+| 3 | 138,017 | 0.949881 | 93 |
+| 4 | 138,017 | 0.949061 | 110 |
+
+### Aggregate results
+
+| Candidate | OOF balanced accuracy | Accuracy | Errors | Unhealthy recall | At-risk recall | Fit recall |
+|---|---:|---:|---:|---:|---:|---:|
+| Experiment 004 ensemble | 0.949439 | 0.940351 | 41,163 | 0.961645 | 0.937698 | 0.948974 |
+| **HGBC exact-value TE** | **0.950196** | **0.940429** | **41,109** | **0.963464** | 0.937573 | **0.949552** |
+| Cross-fitted blend | 0.950151 | 0.940408 | 41,124 | 0.963239 | 0.937563 | 0.949652 |
+
+Standalone HGBC-TE improved OOF balanced accuracy by **+0.000757** over Experiment 004. It removed 54 additional errors and improved unhealthy and fit recall while losing only 0.000125 at-risk recall.
+
+### Honest blend check
+
+| Fold | HGBC weight learned on other folds | Base fold BA | HGBC fold BA | Blend fold BA |
+|---:|---:|---:|---:|---:|
+| 0 | 0.84 | 0.949907 | 0.950714 | 0.950607 |
+| 1 | 0.93 | 0.951460 | 0.951810 | **0.951931** |
+| 2 | 0.93 | 0.949100 | 0.949515 | **0.949710** |
+| 3 | 0.59 | 0.949053 | **0.949881** | 0.949746 |
+| 4 | 0.52 | 0.947673 | **0.949061** | 0.948762 |
+
+The full-OOF weight search preferred 84% HGBC and reported 0.950250 on the same data used to choose the weight. The honest cross-fitted blend scored only 0.950151, below standalone HGBC-TE's 0.950196. Therefore the apparent full-OOF blend gain is treated as weight-selection optimism.
+
+### Where the improvement lives
+
+| Candidate | Sleep-missing BA | Sleep-missing error | Sleep-present BA | Sleep-present error |
+|---|---:|---:|---:|---:|
+| Experiment 004 ensemble | 0.858892 | 23.30% | 0.960638 | 3.82% |
+| **HGBC exact-value TE** | **0.861939** | 23.42% | **0.961113** | **3.80%** |
+| Cross-fitted blend | 0.861841 | 23.40% | 0.961075 | 3.80% |
+
+The new representation improves balanced accuracy in both segments. On sleep-missing rows it improves class-balanced recall even though raw error rate increases slightly, which is consistent with trading majority-class accuracy for minority recall under balanced accuracy.
+
+### Decision
+
+**Accept standalone HGBC exact-value target encoding as the new local leader. Reject the blend candidate.**
+
+The +0.000757 OOF gain exceeds the project's 0.0005 threshold for a meaningful experiment and closely matches the independently reported +0.0009 gain. The result supports the research conclusion that representation, not another boundary adjustment or conventional ensemble member, was the binding constraint.
+
+### Kaggle result
+
+- Submission file: `submission_experiment_007_hgbc_te.csv`.
+- Kaggle submission ID: `54807562`.
+- Public leaderboard balanced accuracy: **0.95032**.
+- Previous accepted public score: **0.94943**.
+- Public improvement: **+0.00089**.
+- OOF-to-public difference: **+0.000124**.
+
+The public result validates the fixed-fold improvement and establishes Experiment 007 as the new accepted baseline. It does not yet reach the 0.951 target. The next ranked independent lever is RealMLP on Apple MPS, evaluated on the same folds; any later stack must use cross-fitted OOF probabilities.
+
+### Artifacts
+
+- `experiment_007_exact_value_te_hgbc.py` — fixed-fold training, exact-value target encoding, error slices, honest blend check, and submission generation.
+- `experiment_007_artifacts/fold_scores.csv` — fold-level HGBC scores and early-stopping iterations.
+- `experiment_007_artifacts/summary.csv` — accepted baseline, HGBC-TE, and cross-fitted blend metrics.
+- `experiment_007_artifacts/crossfit_blend_fold_scores.csv` — fold-safe learned weights and evaluation results.
+- `experiment_007_artifacts/sleep_missing_error_slices.csv` — error and balanced-accuracy comparison by sleep-missingness.
+- `experiment_007_artifacts/oof_predictions.npz` — baseline, HGBC-TE, and cross-fitted OOF probabilities.
+- `experiment_007_artifacts/test_probabilities.npz` — standalone and deployment-blend test probabilities.
+- `experiment_007_artifacts/metadata.json` — full configuration, versions, runtime, and aggregate deltas.
+- `submission_experiment_007_hgbc_te.csv` — selected standalone submission candidate.
+- `submission_experiment_007_blend.csv` — rejected blend candidate retained locally for reproducibility.

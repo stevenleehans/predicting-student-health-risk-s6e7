@@ -6,6 +6,7 @@ submission*.csv
 
 # Large reproducible row-level diagnostics
 experiment_001_artifacts/validation_predictions.csv
+experiment_007_artifacts/checkpoint_predictions.npz
 
 # Python and notebook caches
 __pycache__/
