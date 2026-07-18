@@ -29,6 +29,7 @@ The original ensemble validation figure is based on one stratified 80/20 holdout
 2. Missing `stress_level` and `sleep_duration` account for most difficult rows.
 3. Predicting those missing values globally did not improve balanced accuracy.
 4. Native-NaN XGBoost improved 5-fold balanced accuracy from **0.93552 to 0.94646**, winning all five folds.
+5. Standalone native-NaN XGBoost scored **0.94800** publicly; it improves the XGBoost component but does not beat the 0.94924 ensemble.
 
 ## Data setup
 

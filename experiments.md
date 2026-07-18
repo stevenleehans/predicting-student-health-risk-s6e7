@@ -432,7 +432,7 @@ The router must leave every other row on the original ensemble. This isolates th
 
 ### Status
 
-Completed and accepted as the new XGBoost representation. Not yet submitted as a standalone model.
+Completed, accepted as the new XGBoost representation, trained on the full dataset, and submitted as a standalone model.
 
 ### Question
 
@@ -542,6 +542,24 @@ The gain is large, appears on every fold, improves all three class recalls, and 
 
 This standalone native XGBoost CV score is still below the historical one-split ensemble score of 0.95014. Those numbers are not directly comparable because the ensemble figure used one holdout. The ensemble must be rebuilt using these fixed folds before deciding whether native XGBoost replaces or blends with CatBoost.
 
+### Full-data build and Kaggle submission
+
+- Full training rows: 690,088.
+- Test rows: 295,753.
+- Training device: multicore CPU, `n_jobs=-1`.
+- Full-model training and prediction time: approximately 61 seconds.
+- Submission file: `submission_native_nan_xgboost.csv`.
+- Kaggle submission ID: `54804927`.
+- Public leaderboard balanced accuracy: **0.94800**.
+- Five-fold CV mean: **0.94646 ± 0.00155**.
+- Public-minus-CV difference: **+0.00154**, approximately one CV standard deviation.
+- Previous ensemble public score: **0.94924**.
+- Native XGBoost versus previous ensemble: **-0.00124**.
+
+The public result supports the CV framework: the leaderboard score is close to the expected CV range. It also confirms that native XGBoost alone does not replace the original ensemble. Its value is as an improved XGBoost component for the next cross-validated blend.
+
+The full-data prediction distribution was 82.03% `at-risk`, 10.85% `unhealthy`, and 7.11% `fit`.
+
 ### Recommended next experiment
 
 Experiment 004 should test class-prior probability correction on the saved native-NaN OOF probabilities, then compare it with sample weighting. This is inexpensive because probability correction can first be evaluated without refitting. Any correction parameters must be learned fold-safely or through nested/cross-fitted logic before final acceptance.
@@ -551,11 +569,14 @@ After that, rebuild CatBoost and the ensemble using the same saved five folds. M
 ### Artifacts
 
 - `experiment_003_native_nan_xgboost.py` — reproducible five-fold experiment.
+- `experiment_003_train_submit.py` — full-data native-XGBoost training and submission build.
 - `experiment_003_artifacts/fold_assignments.csv` — fixed reusable fold assignment for every training ID.
 - `experiment_003_artifacts/fold_scores.csv` — fold metrics and per-class recall.
 - `experiment_003_artifacts/oof_predictions.npz` — targets, fold IDs, and OOF probabilities for both representations.
 - `experiment_003_artifacts/summary.csv` — aggregate CV and OOF metrics.
 - `experiment_003_artifacts/metadata.json` — versions, parameters, device, parallelism, runtime, and confusion matrices.
+- `experiment_003_artifacts/full_train_metadata.json` — full-build parameters, runtime, and prediction distribution.
+- `experiment_003_artifacts/full_model_feature_importance.csv` — feature importance from the full native-XGBoost model.
 
 ### Limitations
 

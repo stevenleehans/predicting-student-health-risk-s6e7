@@ -1,0 +1,47 @@
+{
+  "train_rows": 690088,
+  "test_rows": 295753,
+  "submission_file": "submission_native_nan_xgboost.csv",
+  "prediction_counts": {
+    "at-risk": 242610,
+    "unhealthy": 32101,
+    "fit": 21042
+  },
+  "prediction_shares": {
+    "at-risk": 0.8203128962343578,
+    "unhealthy": 0.10853989646766052,
+    "fit": 0.07114720729798177
+  },
+  "device": "cpu (XGBoost has no Apple MPS backend)",
+  "parallelism": "n_jobs=-1",
+  "elapsed_seconds": 60.547942876815796,
+  "kaggle_submission_id": 54804927,
+  "public_score": 0.948,
+  "cv_mean_balanced_accuracy": 0.946457,
+  "previous_ensemble_public_score": 0.94924,
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "versions": {
+    "pandas": "2.3.3",
+    "numpy": "2.1.3",
+    "sklearn": "1.6.1",
+    "xgboost": "3.2.0"
+  },
+  "params": {
+    "objective": "multi:softprob",
+    "num_class": 3,
+    "eval_metric": "mlogloss",
+    "n_estimators": 1000,
+    "learning_rate": 0.05,
+    "max_depth": 8,
+    "min_child_weight": 15,
+    "subsample": 0.85,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 5,
+    "tree_method": "hist",
+    "device": "cpu",
+    "enable_categorical": true,
+    "missing": NaN,
+    "random_state": 42,
+    "n_jobs": -1
+  }
+}
