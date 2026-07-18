@@ -2,6 +2,7 @@
 train.csv
 test.csv
 sample_submission.csv
+data/original/
 submission*.csv
 
 # Large reproducible row-level diagnostics

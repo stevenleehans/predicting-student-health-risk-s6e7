@@ -1,0 +1,37 @@
+{
+  "global_prior": {
+    "unhealthy": 0.08364730295266691,
+    "at-risk": 0.8586745458550213,
+    "fit": 0.057678151192311705
+  },
+  "beta_grid": [
+    0.0,
+    2.0,
+    0.01
+  ],
+  "full_oof_selected_beta": 1.0,
+  "full_oof_selected_beta_score_same_data": 0.9502429528860997,
+  "hgbc_config": {
+    "learning_rate": 0.0627037115235577,
+    "max_iter": 300,
+    "max_leaf_nodes": 33,
+    "min_samples_leaf": 298,
+    "l2_regularization": 0.028912644384523085,
+    "max_bins": 237,
+    "max_features": 0.820265066682815,
+    "early_stopping": true,
+    "categorical_features": "from_dtype",
+    "class_weight": null,
+    "random_state": 42
+  },
+  "fold_source": "experiment_003_artifacts/fold_assignments.csv",
+  "device": "multicore CPU; sklearn HGBC has no Apple MPS backend",
+  "parallelism": "OpenMP/native sklearn parallelism across 12 logical CPUs",
+  "elapsed_seconds": 120.22723484039307,
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "versions": {
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "sklearn": "1.6.1"
+  }
+}

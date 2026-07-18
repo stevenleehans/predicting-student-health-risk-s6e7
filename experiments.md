@@ -982,3 +982,249 @@ The public result validates the fixed-fold improvement and establishes Experimen
 - `experiment_007_artifacts/metadata.json` — full configuration, versions, runtime, and aggregate deltas.
 - `submission_experiment_007_hgbc_te.csv` — selected standalone submission candidate.
 - `submission_experiment_007_blend.csv` — rejected blend candidate retained locally for reproducibility.
+
+---
+
+## Experiment 008 — Original-data generator priors and source augmentation
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed and rejected. Neither variant beat Experiment 007 in fixed-fold OOF, so neither was submitted.
+
+### Question
+
+Can the original 50,000-row student-health dataset reveal the synthetic target generator and add useful signal to the competition training set?
+
+### Source data and audit
+
+- Kaggle dataset: `ziya07/college-student-health-behavior-dataset` (CC0).
+- File: `student_health_dataset_50k.csv`.
+- Shape: 50,000 rows and 16 columns.
+- The source contains all 13 competition features, the target, a student ID, and a timestamp.
+- It has no missing feature values.
+- Target counts: 43,718 at-risk, 3,816 unhealthy, and 2,466 fit.
+- A simple sleep/stress/activity generator rule reached approximately 0.94898 balanced accuracy on the source data, confirming that these variables dominate the generator without perfectly specifying it.
+
+The original files are downloaded to `data/original/` and intentionally excluded from Git. The experiment script records the Kaggle source and reproduces the feature construction.
+
+### Method
+
+Both variants reused Experiment 007's fixed folds, exact-value inner-cross-fitted target encodings, native numerical NaNs, and HGBC configuration.
+
+1. **Source-prior features:** estimate smoothed source class probabilities from sleep band, stress level, and physical-activity level. For missing competition values, use backoff tables based only on available keys. Append source class probabilities, confidence, entropy, rule score, rule label, and source cell as features.
+2. **Source augmentation:** use the same source-prior features and append all 50,000 original rows to each outer fitting fold. Source rows are never added to validation folds.
+
+The 50,000 source rows were included independently in every fold rather than split with competition rows because they are external training data, not part of the competition OOF population.
+
+### Fold results
+
+| Fold | Source-prior features | Source augmentation |
+|---:|---:|---:|
+| 0 | 0.950516 | 0.950299 |
+| 1 | 0.952226 | 0.951461 |
+| 2 | 0.949699 | 0.949212 |
+| 3 | 0.949714 | 0.949263 |
+| 4 | 0.948374 | 0.948166 |
+
+### Aggregate results
+
+| Candidate | OOF balanced accuracy | Accuracy | Errors |
+|---|---:|---:|---:|
+| **Experiment 007 HGBC-TE** | **0.950196** | **0.940429** | **41,109** |
+| Source-prior features | 0.950106 | 0.940405 | 41,126 |
+| Source augmentation | 0.949680 | 0.940376 | 41,146 |
+
+The source-prior variant lost **0.000090** and source augmentation lost **0.000516** versus Experiment 007.
+
+### Error-location check
+
+| Candidate | Sleep-missing BA | Sleep-missing error | Sleep-present BA | Sleep-present error |
+|---|---:|---:|---:|---:|
+| Experiment 007 HGBC-TE | 0.861939 | 23.42% | **0.961113** | 3.80% |
+| Source-prior features | **0.862274** | 23.91% | 0.960972 | **3.74%** |
+| Source augmentation | 0.861698 | 23.90% | 0.960566 | 3.74% |
+
+Source priors slightly improved class-balanced recall in the sleep-missing slice, but that gain did not offset the global degradation. The higher raw error rate in the hard slice again reflects a minority-recall trade rather than a reduction in total mistakes.
+
+### Decision
+
+**Reject both source-data variants and do not submit them.**
+
+The original dataset exposes a strong generator prior but is not distribution-identical to the competition data. Direct augmentation pulls the model away from the competition optimum, while compressed source priors largely repeat signal already learned from the much larger competition training set.
+
+### Artifacts
+
+- `experiment_008_original_generator_priors.py` — source audit, generator-prior construction, both fixed-fold variants, and submission-candidate generation.
+- `experiment_008_artifacts/fold_scores.csv` — per-fold scores and early-stopping iterations.
+- `experiment_008_artifacts/summary.csv` — aggregate metrics.
+- `experiment_008_artifacts/sleep_missing_error_slices.csv` — hard-slice comparison.
+- `experiment_008_artifacts/oof_predictions.npz` and `test_probabilities.npz` — reusable probabilities.
+- `experiment_008_artifacts/metadata.json` — source provenance, rule audit, configuration, versions, and runtime.
+
+---
+
+## Experiment 009 — Unweighted native-NaN HGBC with prior correction
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed and rejected. The honest cross-fitted correction did not beat Experiment 007, so no Kaggle submission was made.
+
+### Question
+
+Does removing HGBC's balanced class weights and correcting the resulting probabilities by the training prior improve balanced accuracy?
+
+### Method
+
+- Reused Experiment 007's 13 raw plus 39 exact-value target-encoding features, native numerical NaNs, fixed five folds, and HGBC hyperparameters.
+- Changed only `class_weight='balanced'` to `class_weight=None`.
+- Applied the correction `p_corrected(k) proportional to p_raw(k) / prior(k)^beta`.
+- Searched beta from 0.00 through 2.00 in steps of 0.01.
+- For the honest result, each held-out fold's beta was learned using only the other four OOF folds. The full-OOF beta was retained only as a deployment diagnostic.
+
+### Fold results
+
+| Fold | Unweighted raw | Fixed beta=1 correction | Iterations |
+|---:|---:|---:|---:|
+| 0 | 0.888210 | 0.950757 | 92 |
+| 1 | 0.889637 | 0.952394 | 102 |
+| 2 | 0.891040 | 0.949627 | 87 |
+| 3 | 0.888534 | 0.949769 | 107 |
+| 4 | 0.889983 | 0.948668 | 103 |
+
+The unweighted model has high ordinary accuracy but poor balanced accuracy because it strongly favors the at-risk majority class. Prior correction restores the intended decision objective.
+
+### Aggregate results
+
+| Candidate | OOF balanced accuracy | Accuracy | Errors |
+|---|---:|---:|---:|
+| **Experiment 007 weighted HGBC** | **0.950196** | 0.940429 | 41,109 |
+| Unweighted raw | 0.889481 | **0.968513** | **21,729** |
+| Unweighted, fixed beta=1 | 0.950243 | 0.940121 | 41,322 |
+| Unweighted, cross-fitted beta | 0.950108 | **0.940457** | 41,090 |
+
+Four meta folds selected beta 1.00; the fifth selected 0.95. The fixed beta=1 score is +0.000047 above Experiment 007, but it was evaluated after inspecting the same OOF predictions and is below any credible acceptance threshold. The fold-safe result is **-0.000088** below Experiment 007.
+
+### Decision
+
+**Reject unweighted training plus prior correction.** Balanced class weighting inside HGBC is at least as effective and simpler. This also confirms that post-hoc class-boundary tuning remains a weak lever at the current score level.
+
+### Artifacts
+
+- `experiment_009_unweighted_hgbc_prior.py` — unweighted training and fold-safe beta correction.
+- `experiment_009_artifacts/model_fold_scores.csv` — raw and beta-one fold results.
+- `experiment_009_artifacts/crossfit_beta_results.csv` — held-out beta choices and scores.
+- `experiment_009_artifacts/full_beta_history.csv` — complete deployment diagnostic grid.
+- `experiment_009_artifacts/summary.csv` — aggregate metrics.
+- `experiment_009_artifacts/oof_predictions.npz`, `test_probabilities.npz`, and `metadata.json` — reusable probabilities and full run configuration.
+
+---
+
+## Experiment 010 — RealMLP on Apple MPS and HGBC blend
+
+### Date
+
+2026-07-18
+
+### Status
+
+Completed and submitted. The honestly cross-fitted HGBC-RealMLP blend is the new local and public project leader, although its gain remains slightly below the project's strict +0.0005 confirmed-improvement threshold.
+
+### Question
+
+Can a materially different tabular neural-network family add enough diversity to improve Experiment 007, especially on sleep-missing rows?
+
+### Research basis
+
+Kaggle MCP research identified RealMLP as the strongest independent model-family lever, with public notebooks reporting approximately 0.9506 CV. The implementation follows the public RealMLP design: periodic numerical embeddings, cardinality-aware categorical handling, NTK-parameterized layers, a RankGLU head, EMA weights, and a 16-member ensemble trained inside one network.
+
+### Method
+
+- Reused Experiment 003's exact fixed fold assignments; they exactly match `StratifiedKFold(5, shuffle=True, random_state=42)`.
+- Ran PyTorch 2.12 on the Mac's Apple MPS backend.
+- Filled numerical NaNs with zero because the neural architecture cannot branch on NaNs natively; missing categorical values use an explicit level.
+- Added two categorical resolutions for each numerical variable and target-encoded the 14 binned copies inside every outer fitting fold.
+- Robust-scaled and smoothly clipped the seven raw numerical features plus 42 multiclass encoding columns.
+- Trained a 16-member embedded ensemble for five epochs with AdamW, five parameter groups, cosine label smoothing, gradient clipping, and EMA checkpoint selection.
+- Used class-balanced training weights with the published class-specific adjustment, reordered to the project's label order.
+- Compared RealMLP solo with Experiment 007 HGBC and learned an HGBC-RealMLP probability weight using only the other four folds for each held-out fold.
+- The full-OOF deployment search selected 56% RealMLP and 44% HGBC; held-out fold weights were 54%, 54%, 54%, 56%, and 56% RealMLP.
+
+### RealMLP fold results
+
+| Fold | Best epoch | RealMLP balanced accuracy | Experiment 007 HGBC | Delta |
+|---:|---:|---:|---:|---:|
+| 0 | 5 | 0.951132 | 0.950714 | +0.000418 |
+| 1 | 4 | 0.952432 | 0.951810 | +0.000622 |
+| 2 | 4 | 0.950090 | 0.949515 | +0.000575 |
+| 3 | 4 | 0.950065 | 0.949881 | +0.000184 |
+| 4 | 4 | 0.948854 | 0.949061 | -0.000207 |
+
+RealMLP improved four of five folds. The final epoch was not automatically preferred: folds 1–4 selected epoch 4 from their held-out EMA evaluations.
+
+### Aggregate results
+
+| Candidate | OOF balanced accuracy | Accuracy | Errors | Unhealthy recall | At-risk recall | Fit recall |
+|---|---:|---:|---:|---:|---:|---:|
+| Experiment 007 HGBC | 0.950196 | **0.940429** | **41,109** | 0.963464 | **0.937573** | 0.949552 |
+| RealMLP | 0.950515 | 0.938969 | 42,117 | **0.965318** | 0.935620 | **0.950607** |
+| **HGBC-RealMLP cross-fitted blend** | **0.950636** | 0.939831 | 41,522 | 0.964815 | 0.936687 | 0.950406 |
+
+RealMLP solo adds **+0.000319** over HGBC. The fold-safe blend adds **+0.000440** and improves every held-out fold relative to Experiment 007. The full-OOF same-data weight search reports 0.950666, only +0.000030 above the honest estimate.
+
+### Cross-fitted blend results
+
+| Fold | RealMLP weight learned on other folds | Blend fold BA |
+|---:|---:|---:|
+| 0 | 0.54 | 0.951387 |
+| 1 | 0.54 | 0.952543 |
+| 2 | 0.54 | 0.950004 |
+| 3 | 0.56 | 0.950072 |
+| 4 | 0.56 | 0.949173 |
+
+The learned weights are exceptionally stable across meta folds, supporting a real diversity effect rather than a fragile weight search.
+
+### Where the gain lives
+
+| Candidate | Sleep-missing BA | Sleep-missing error | Sleep-present BA | Sleep-present error |
+|---|---:|---:|---:|---:|
+| Experiment 007 HGBC | 0.861939 | **23.42%** | 0.961113 | **3.80%** |
+| RealMLP | 0.863286 | 24.40% | 0.961308 | 3.84% |
+| **HGBC-RealMLP blend** | **0.863582** | 23.95% | **0.961407** | 3.80% |
+
+The blend improves balanced accuracy in both segments, with the larger gain on sleep-missing rows. It does not reduce raw mistakes because it trades at-risk majority accuracy for unhealthy and fit recall, which the balanced-accuracy metric rewards.
+
+### Kaggle results
+
+| Candidate | Submission ID | Public score |
+|---|---:|---:|
+| Experiment 007 HGBC | 54807562 | 0.95032 |
+| RealMLP solo | 54808616 | 0.95039 |
+| **HGBC-RealMLP blend** | **54808605** | **0.95045** |
+
+The blend improves the previous public best by **+0.00013**. The public ordering agrees with CV: blend first, RealMLP second, HGBC third. The gain transfers, but neither submission reaches the 0.951 target.
+
+### Decision
+
+**Accept the 44% HGBC / 56% RealMLP blend as the new project leader.**
+
+Treat it as a validated incremental gain, not a major breakthrough: +0.000440 OOF is just under the predeclared +0.0005 threshold, and the public gain is +0.00013. The result establishes neural/tree diversity as a useful lever while confirming that the remaining path to 0.951 requires another source of signal, not more tiny class-probability adjustments.
+
+### Artifacts
+
+- `experiment_010_realmlp_mps.py` — complete MPS training, fold-safe target encoding, checkpointing, error slices, blend validation, and submission generation.
+- `experiment_010_artifacts/epoch_scores.csv` — every fold/epoch loss and held-out EMA score.
+- `experiment_010_artifacts/fold_scores.csv` — selected epoch, score, and fold class weights.
+- `experiment_010_artifacts/crossfit_blend_scores.csv` — fold-safe weights and validation scores.
+- `experiment_010_artifacts/error_slices.csv` — sleep-missing and sleep-present comparison.
+- `experiment_010_artifacts/summary.csv` — aggregate model metrics.
+- `experiment_010_artifacts/checkpoint_predictions.npz` — per-fold recovery checkpoint.
+- `experiment_010_artifacts/oof_predictions.npz`, `test_probabilities.npz`, and `metadata.json` — final probabilities and full environment/configuration record.
+- `submission_experiment_010_realmlp.csv` and `submission_experiment_010_hgbc_realmlp_blend.csv` — validated local candidates, intentionally excluded from Git.

@@ -1,0 +1,41 @@
+{
+  "source_dataset": "ziya07/college-student-health-behavior-dataset",
+  "source_file": "student_health_dataset_50k.csv",
+  "source_license": "CC0-1.0",
+  "source_rows": 50000,
+  "source_rule_balanced_accuracy_on_source": 0.9489836375558504,
+  "source_global_class_probability": {
+    "unhealthy": 0.07632,
+    "at-risk": 0.87436,
+    "fit": 0.04932
+  },
+  "generator_keys": [
+    "_sleep_band",
+    "stress_level",
+    "physical_activity_level"
+  ],
+  "probability_smoothing_alpha": 20.0,
+  "fold_source": "experiment_003_artifacts/fold_assignments.csv",
+  "hgbc_config": {
+    "learning_rate": 0.0627037115235577,
+    "max_iter": 300,
+    "max_leaf_nodes": 33,
+    "min_samples_leaf": 298,
+    "l2_regularization": 0.028912644384523085,
+    "max_bins": 237,
+    "max_features": 0.820265066682815,
+    "early_stopping": true,
+    "categorical_features": "from_dtype",
+    "class_weight": "balanced",
+    "random_state": 42
+  },
+  "device": "multicore CPU; sklearn HGBC has no Apple MPS backend",
+  "parallelism": "OpenMP/native sklearn parallelism across 12 logical CPUs",
+  "elapsed_seconds": 172.23832178115845,
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "versions": {
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "sklearn": "1.6.1"
+  }
+}
