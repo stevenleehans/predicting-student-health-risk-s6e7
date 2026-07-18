@@ -19,7 +19,7 @@ from sklearn.preprocessing import TargetEncoder
 from sklearn.utils.class_weight import compute_class_weight
 
 
-SEED = 2026
+SEED = int(os.environ.get("REALMLP_SEED", "2026"))
 N_FOLDS = 5
 EPOCHS = 5
 TRAIN_BS = 512
@@ -42,7 +42,7 @@ CATEGORICAL_COLS = [
     "diet_type", "stress_level", "sleep_quality",
     "physical_activity_level", "smoking_alcohol", "gender",
 ]
-OUT = Path("experiment_010_artifacts")
+OUT = Path(os.environ.get("REALMLP_OUT", "experiment_010_artifacts"))
 OUT.mkdir(exist_ok=True)
 
 

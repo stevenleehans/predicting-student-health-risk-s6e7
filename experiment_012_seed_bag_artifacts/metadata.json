@@ -1,0 +1,11 @@
+{
+  "scope": "local fixed-fold CV only",
+  "seeds": [
+    2026,
+    2027
+  ],
+  "fixed_equal_seed_bag": true,
+  "fold_source": "Experiment 003 fixed five folds",
+  "deployment_weight_same_oof_diagnostic_only": 0.5700000000000001,
+  "decision": "reject unless honest OOF exceeds 0.950635921"
+}
